@@ -26,11 +26,8 @@ coa_data =
   janitor::clean_names() |> 
   separate(month, into = c("year", "month", "date") ) |> 
   mutate(net_change = total_perm_in - total_perm_out) |> 
-  select(year, month, zipcode, city,net_change) |> 
-  rename(zip_code = zipcode) |> 
-  pivot_wider(
-    names_from = "month" ,
-    values_from = "net_change")
+  rename(zip_code = zipcode) 
+ 
 
 
 
@@ -62,5 +59,65 @@ unique_neighborhoods =
   distinct() 
   
 
+```
+
+##Compare city
+```{r}
+Manhattan_co =
+  combine_data |> 
+  filter(borough_variable == "Manhattan") |> 
+  count(city) |> 
+  arrange(desc(n)) |> 
+  mutate(rank = row_number()) 
+
+
+queens_co =
+  combine_data |> 
+  filter(borough_variable == "Queens") |> 
+  count(city) |> 
+  arrange(desc(n)) |> 
+  mutate(rank = row_number()) 
+  
+
+
+```
+
+
+## Problem 2
+#EDA
+```{r}
+average_df = 
+  combine_data |> 
+  group_by(borough_variable, year) |> 
+  summarize(average_df = mean(net_change, na.rm = TRUE)) |> 
+  mutate(year = as.integer(year))
+
+low_df = 
+  combine_data |> 
+  arrange(net_change) |> 
+  select(zip_code, neighborhood, year, month, net_change) |> 
+  head(n = 5)
+
+
+high_2020 =
+  combine_data |> 
+  filter(year < 2020) |> 
+  arrange(desc(net_change)) |> 
+  select(zip_code, neighborhood, year, month, net_change) |> 
+  head(n = 5)
+  
+
+
+
+```
+
+
+
+## Visualization:
+```{r}
+combine_plot = 
+  combine_data |> 
+  mutate(month = as.integer(month),
+         year = as.integer(year))
 ```
 
