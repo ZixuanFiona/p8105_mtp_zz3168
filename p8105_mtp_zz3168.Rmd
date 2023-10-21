@@ -1,0 +1,66 @@
+---
+title: "p8105_mtp_zz3168"
+author: "Zixuan Zhang"
+date: "2023-10-20"
+output: github_document
+---
+
+```{r}
+library(readr)
+library(readxl)
+library(tidyverse)
+library(dplyr)
+```
+
+## Problem 1 
+##Data import, cleaning, and quality control
+```{r}
+coa_data_1 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2018")) 
+  coa_data_2 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2019")) 
+coa_data_3 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2020")) 
+coa_data_4 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2021")) 
+coa_data_5 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2022"))
+
+coa_data = 
+  bind_rows(coa_data_1,coa_data_2,coa_data_3,coa_data_4,coa_data_5) |> 
+  janitor::clean_names() |> 
+  separate(month, into = c("year", "month", "date") ) |> 
+  mutate(net_change = total_perm_in - total_perm_out) |> 
+  select(year, month, zipcode, city,net_change) |> 
+  rename(zip_code = zipcode) |> 
+  pivot_wider(
+    names_from = "month" ,
+    values_from = "net_change")
+
+
+
+zip_data = read_csv("data/Zip Codes.csv") |> 
+  janitor::clean_names() |> 
+  rename(borough_variable = county_name )
+
+
+  
+combine_data = 
+  left_join(zip_data, coa_data,by="zip_code")
+  
+  
+
+```
+
+##describe Tidy Dataset
+
+```{r}
+unique_zips =
+  combine_data |> 
+  select(zip_code) |> 
+  distinct()
+
+unique_neighborhoods =
+  combine_data |> 
+  drop_na() |> 
+  select(neighborhood) |> 
+  distinct() 
+  
+
+```
+
