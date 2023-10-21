@@ -10,6 +10,8 @@ library(readr)
 library(readxl)
 library(tidyverse)
 library(dplyr)
+library(ggplot2)
+library(tidyr)
 ```
 
 ## Problem 1 
@@ -119,5 +121,23 @@ combine_plot =
   combine_data |> 
   mutate(month = as.integer(month),
          year = as.integer(year))
+
+
+combine_plot |> 
+  group_by(year, month, neighborhood, borough_variable) |> 
+  summarize(average_change = mean(net_change, na.rm = TRUE))
+
+
+
+
+ggplot(combine_data, aes(x = month + (year - 2018) * 12, 
+                         y = average_change, 
+                         color = borough_variable)
+       ) +
+  geom_point(size = 3)+
+  geom_line() + 
+  facet_wrap(~borough_variable) +
+  theme_minimal()
+
 ```
 
