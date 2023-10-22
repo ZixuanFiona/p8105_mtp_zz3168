@@ -12,10 +12,35 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 10, 
+  fig.height = 9,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
 
 ## Problem 1 
 ##Data import, cleaning, and quality control
+We import, organize, and merge data sets, and then delete erroneous data from the merged table through identification. Then we use statistics and visualization to analyze and identify trends in the data set.
+
+The original data includes New York City's COA data from 2018 to 2022 and `zip_data` data that accurately reflects New York City's counties, boroughs, and communities. These include `borough` variables, `net_change` variable, `zip_code`, `month` and other important data.
+
+We first synthesize the COA data from 2018 to 2022 in `coa_data`, then convert the time into `month`, `year`, `date`, and use `total_perm_in - total_perm_out` to get the data of `net_change`. By combining the data of `zip_data` and `coa_data`, we found that some erroneous overlaps appeared in the total data table, and obtained a new data table through exclusion.
+
+
 ```{r}
 coa_data_1 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2018")) 
   coa_data_2 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2019")) 
@@ -26,6 +51,7 @@ coa_data_5 = read_xlsx("data/USPS CHANGE OF ADDRESS NYC.xlsx", sheet = c("2022")
 coa_data = 
   bind_rows(coa_data_1,coa_data_2,coa_data_3,coa_data_4,coa_data_5) |> 
   janitor::clean_names() |> 
+  mutate(time = month) |> 
   separate(month, into = c("year", "month", "date") ) |> 
   mutate(net_change = total_perm_in - total_perm_out) |> 
   rename(zip_code = zipcode) 
@@ -35,12 +61,17 @@ coa_data =
 
 zip_data = read_csv("data/Zip Codes.csv") |> 
   janitor::clean_names() |> 
-  rename(borough_variable = county_name )
+  mutate(borough = ifelse(county_name == "New York", "Manhattan", county_name)) 
 
 
   
 combine_data = 
-  left_join(zip_data, coa_data,by="zip_code")
+  inner_join(zip_data, coa_data,by="zip_code") |> 
+  filter(!(borough == "Manhattan" & zip_code == 10463) &
+          !(borough == "Manhattan" & zip_code == 11201 &
+          !(borough == "New York" & zip_code == 11239) &
+            !(borough == "New York" & zip_code == 11693)
+  ))
   
   
 
@@ -52,67 +83,75 @@ combine_data =
 unique_zips =
   combine_data |> 
   select(zip_code) |> 
-  distinct()
+  distinct() |> 
+  knitr::kable()
 
 unique_neighborhoods =
   combine_data |> 
   drop_na() |> 
   select(neighborhood) |> 
-  distinct() 
+  distinct() |> 
+  knitr::kable()
   
 
 ```
 
 ##Compare city
+#manhateen
 ```{r}
-Manhattan_co =
-  combine_data |> 
-  filter(borough_variable == "Manhattan") |> 
+combine_data |> 
+  filter(borough == "Manhattan") |> 
   count(city) |> 
   arrange(desc(n)) |> 
-  mutate(rank = row_number()) 
-
-
-queens_co =
-  combine_data |> 
-  filter(borough_variable == "Queens") |> 
-  count(city) |> 
-  arrange(desc(n)) |> 
-  mutate(rank = row_number()) 
+  mutate(rank = row_number()) |> 
+  filter(rank < 7) |> 
+  knitr::kable()
   
+```
 
-
+#queen
+```{r}
+combine_data |> 
+  filter(borough == "Queens") |> 
+  count(city) |> 
+  arrange(desc(n)) |> 
+  mutate(rank = row_number()) |> 
+  filter(rank < 7) |> 
+  knitr::kable()
 ```
 
 
 ## Problem 2
 #EDA
 ```{r}
-average_df = 
-  combine_data |> 
-  group_by(borough_variable, year) |> 
+combine_data |> 
+  group_by(borough, year) |> 
   summarize(average_df = mean(net_change, na.rm = TRUE)) |> 
-  mutate(year = as.integer(year))
-
-low_df = 
-  combine_data |> 
-  arrange(net_change) |> 
-  select(zip_code, neighborhood, year, month, net_change) |> 
-  head(n = 5)
-
-
-high_2020 =
-  combine_data |> 
-  filter(year < 2020) |> 
-  arrange(desc(net_change)) |> 
-  select(zip_code, neighborhood, year, month, net_change) |> 
-  head(n = 5)
-  
-
+  mutate(year = as.integer(year)) |> 
+  knitr::kable()
 
 
 ```
 
+##lowest values and highest 
+```{r}
+combine_data |> 
+  arrange(net_change) |> 
+  select(zip_code, neighborhood, year, month, net_change) |> 
+  head(n = 5) |> 
+  knitr::kable()
+
+
+combine_data |> 
+  filter(year < 2020) |> 
+  arrange(desc(net_change)) |> 
+  select(zip_code, neighborhood, year, month, net_change) |> 
+  head(n = 5) |> 
+  knitr::kable()
+
+  
+
+```
 
 
 ## Visualization:
@@ -124,20 +163,23 @@ combine_plot =
 
 
 combine_plot |> 
-  group_by(year, month, neighborhood, borough_variable) |> 
-  summarize(average_change = mean(net_change, na.rm = TRUE))
-
-
-
-
-ggplot(combine_data, aes(x = month + (year - 2018) * 12, 
-                         y = average_change, 
-                         color = borough_variable)
+  group_by(year, time, neighborhood, borough) |> 
+  summarize(average_change = mean(net_change, na.rm = TRUE)) |> 
+  ggplot(aes(x = time, 
+             y = average_change, 
+             color = neighborhood)
        ) +
-  geom_point(size = 3)+
+  geom_point()+
   geom_line() + 
-  facet_wrap(~borough_variable) +
-  theme_minimal()
+  facet_wrap(~borough) +
+  labs(title = "Monthly Net Change across Neighborhoods", 
+       x = "Time", 
+       y = "Average Net Change")
+
+
+
+# Export the plot
+ggsave("results/city change.pdf")
 
 ```
 
