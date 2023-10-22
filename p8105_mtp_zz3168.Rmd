@@ -68,26 +68,27 @@ zip_data = read_csv("data/Zip Codes.csv") |>
 combine_data = 
   inner_join(zip_data, coa_data,by="zip_code") |> 
   filter(!(borough == "Manhattan" & zip_code == 10463) &
-          !(borough == "Manhattan" & zip_code == 11201 &
-          !(borough == "New York" & zip_code == 11239) &
-            !(borough == "New York" & zip_code == 11693)
-  ))
+          !(borough == "Manhattan" & zip_code == 11201) &
+          !(borough == "Queens" & zip_code == 11239) &
+          !(borough == "Kings" & zip_code == 11693))
   
   
 
 ```
 
 ##describe Tidy Dataset
+Through the combined data table `combine_data` we get that there are a total of `r nrow(combine_data)` data, including 237 unique postal codes and 42 unique communities
 
 ```{r}
-unique_zips =
-  combine_data |> 
+#unique_zips
+combine_data |> 
   select(zip_code) |> 
   distinct() |> 
+  head(n = 10) |> 
   knitr::kable()
 
-unique_neighborhoods =
-  combine_data |> 
+#unique_neighborhoods
+combine_data |> 
   drop_na() |> 
   select(neighborhood) |> 
   distinct() |> 
@@ -97,8 +98,10 @@ unique_neighborhoods =
 ```
 
 ##Compare city
-#manhateen
+
+
 ```{r}
+#manhateen
 combine_data |> 
   filter(borough == "Manhattan") |> 
   count(city) |> 
@@ -109,8 +112,8 @@ combine_data |>
   
 ```
 
-#queen
 ```{r}
+#queen
 combine_data |> 
   filter(borough == "Queens") |> 
   count(city) |> 
