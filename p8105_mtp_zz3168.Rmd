@@ -98,7 +98,7 @@ combine_data |>
 ```
 
 ##Compare city
-
+By comparing Manhattan and Queens, we found that New York has the largest proportion in Manhattan, with 3477, followed by CANAL STREET, ROOSEVELT ISL, etc. Their data are very different. In the data of Queens, JAMAICA accounts for the largest proportion at 372, followed by FLUSHING, ASTORIA, etc., but their data are not very different.
 
 ```{r}
 #manhateen
@@ -126,6 +126,7 @@ combine_data |>
 
 ## Problem 2
 #EDA
+We created a table to show the averages for each borough and year. According to the `average_df` data, Manhattan's average has the largest difference, and Richmond's average has the smallest difference.
 ```{r}
 combine_data |> 
   group_by(borough, year) |> 
@@ -135,16 +136,17 @@ combine_data |>
 
 
 ```
-
 ##lowest values and highest 
+Two tables were created to show the five lowest values in the data and the five highest values for 2020. The lowest value in `net_change` is -983, and the highest value in 2020 is 360 in `net_change`.
 ```{r}
+#lowest
 combine_data |> 
   arrange(net_change) |> 
   select(zip_code, neighborhood, year, month, net_change) |> 
   head(n = 5) |> 
   knitr::kable()
 
-
+#highest
 combine_data |> 
   filter(year < 2020) |> 
   arrange(desc(net_change)) |> 
@@ -158,6 +160,7 @@ combine_data |>
 
 
 ## Visualization:
+Based on the ggplot chart, we can derive the community-level average versus month over the five years. Manhattan still has the most data among the five communities, but its average difference in 2020 is larger than the other four communities. Richmond's average has the least correlation with the month, but its average is much more stable than the other four communities.
 ```{r}
 combine_plot = 
   combine_data |> 
